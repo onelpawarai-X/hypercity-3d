@@ -91,24 +91,38 @@
     <div id="toast"></div>
   </div>
 
-  <!-- ============ START ============ -->
+  <!-- ============ START / CHARACTER SELECT ============ -->
   <div id="start" class="hidden">
     <div class="start-card">
       <div class="logo">HYPER<span>CITY</span> 3D</div>
-      <p class="sub">একটি খোলা থ্রিডি শহর — মানুষ ও এআই এজেন্ট, একই জগতে।</p>
-      <div class="controls-grid">
-        <div><kbd>W A S D</kbd> হাঁটা / গাড়ি চালানো</div>
-        <div><kbd>মাউস</kbd> চারপাশে তাকানো</div>
-        <div><kbd>ক্লিক</kbd> ঘুষি / গুলি · <kbd>Q</kbd> অস্ত্র বদল</div>
-        <div><kbd>E</kbd> গাড়ি চালাও · ঘরের ভিতরে ঢোকো</div>
-        <div><kbd>1</kbd>…<kbd>6</kbd> যানবাহন স্পন</div>
-        <div><kbd>F</kbd> ক্যামেরা বদল · <kbd>G</kbd> এআই এজেন্ট</div>
+      <p class="sub">তোমার চরিত্র বেছে নাও — তারপর শহরে নেমে পড়ো।</p>
+
+      <div id="roster" class="roster" role="listbox" aria-label="চরিত্র বেছে নাও"></div>
+
+      <div id="roster-info" class="roster-info">
+        <span id="roster-name">—</span>
+        <span id="roster-blurb"></span>
       </div>
+
+      <details class="controls-details">
+        <summary>নিয়ন্ত্রণ দেখো</summary>
+        <div class="controls-grid">
+          <div><kbd>W A S D</kbd> হাঁটা · গাড়ি চালানো</div>
+          <div><kbd>মাউস</kbd> চারপাশে তাকানো</div>
+          <div><kbd>বাঁ ক্লিক</kbd> ঘুষি / গুলি</div>
+          <div><kbd>Q</kbd> অস্ত্র বদল</div>
+          <div><kbd>E</kbd> গাড়িতে ওঠা · ঘরে ঢোকা · বেরোনো</div>
+          <div><kbd>Shift</kbd> দৌড় / বুস্ট · <kbd>Space</kbd> লাফ / ব্রেক</div>
+          <div><kbd>১</kbd>–<kbd>৬</kbd> গাড়ি · ট্রাক · প্লেন · হেলিকপ্টার · জেট · ড্রোন</div>
+          <div><kbd>F</kbd> ক্যামেরা · <kbd>G</kbd> এআই এজেন্ট · <kbd>T</kbd> দিন/রাত</div>
+        </div>
+      </details>
+
       <p class="sub touch-note hidden" id="touch-note">মোবাইলে: বাঁ দিকের স্টিক দিয়ে চলো, ডান দিকে টেনে তাকাও, ডান পাশের বোতামে লাফ/ঘুষি/গাড়ি।</p>
-      <button id="start-btn">খেলা শুরু করো</button>
+      <button id="start-btn">এই চরিত্রে খেলা শুরু করো</button>
       <div class="credit">
         World © OpenStreetMap contributors (ODbL-1.0) · Vehicle: Khronos CarConcept © Darmstadt Graphics Group / Eric Chadwick (CC BY 4.0) ·
-        Aircraft: ir-engine assets (Apache-2.0) · Characters: KayKit by Kay Lousberg (CC0) + three.js/Mixamo ·
+        Aircraft: ir-engine assets (Apache-2.0) · Characters: KayKit by Kay Lousberg (CC0) + three.js/Mixamo (CC0) ·
         Interior: Poly Haven (CC0) · Sky: Poly Haven (CC0)
       </div>
     </div>

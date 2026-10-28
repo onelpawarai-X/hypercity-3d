@@ -33,6 +33,25 @@ check('world loaded from real OSM + GLB data', boot.buildings > 15000 && boot.ro
 check('interior furniture models loaded', boot.props >= 20, `${boot.props} props`);
 check('animated character rigs loaded', boot.rigs >= 6, `${boot.rigs} rigs`);
 
+// ---- character select ----------------------------------------------------
+// The start screen offers the roster with a live preview of each real rig.
+const select = await page.evaluate(async () => {
+  const cards = [...document.querySelectorAll('.roster-card')];
+  const cs = window.game.characterSelect;
+  const painted = cs.cards.filter((c) => c.model).length;
+  const before = window.game.playerCharacter;
+  cards.find((c) => c.dataset.id === 'robot').click();
+  await new Promise((r) => setTimeout(r, 50));
+  const swapped = window.game.playerCharacter;
+  // Put the default back so the rest of the run uses the roster default.
+  cards.find((c) => c.dataset.id === before).click();
+  return { cards: cards.length, painted, before, swapped,
+           previews: cs.cards.length };
+});
+check('start screen lets you pick from the real character roster',
+  select.cards >= 6 && select.painted === select.cards && select.swapped === 'robot',
+  `${select.cards} cards, ${select.painted} live previews`);
+
 await page.click('#start-btn');
 await new Promise((r) => setTimeout(r, 1500));
 
