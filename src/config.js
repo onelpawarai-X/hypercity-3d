@@ -4,6 +4,13 @@
  * public/data/city.json, which is derived from OpenStreetMap (ODbL-1.0).
  */
 
+/**
+ * Resolve a public asset path against the deployment base, so the game works
+ * both at the domain root and under a sub-path such as GitHub Pages /<repo>/.
+ */
+const BASE = import.meta.env?.BASE_URL || '/';
+const asset = (path) => `${BASE}${path.replace(/^\//, '')}`;
+
 export const CONFIG = {
   render: {
     // The city spans ~13.6 km east-west, so the far plane must reach beyond that.
@@ -26,17 +33,17 @@ export const CONFIG = {
   },
 
   world: {
-    layoutUrl: '/data/city.json',
+    layoutUrl: asset('/data/city.json'),
     assets: {
-      buildings: '/assets/city/buildings.glb',
-      facades: '/assets/city/facades.glb',
-      roads: '/assets/city/roads.glb',
-      terrain: '/assets/city/terrain.glb',
-      bridges: '/assets/city/coastal-bridges.glb',
-      shoreline: '/assets/city/coastal-shoreline.glb',
-      trees: '/assets/nature/tree.glb',
-      palms: '/assets/nature/palm.glb',
-      lamps: '/assets/misc/park-floodlight.glb',
+      buildings: asset('/assets/city/buildings.glb'),
+      facades: asset('/assets/city/facades.glb'),
+      roads: asset('/assets/city/roads.glb'),
+      terrain: asset('/assets/city/terrain.glb'),
+      bridges: asset('/assets/city/coastal-bridges.glb'),
+      shoreline: asset('/assets/city/coastal-shoreline.glb'),
+      trees: asset('/assets/nature/tree.glb'),
+      palms: asset('/assets/nature/palm.glb'),
+      lamps: asset('/assets/misc/park-floodlight.glb'),
     },
     // Half-extents of the playable area, read from city.json meta.extent.
     extent: [-6788.1, -2604.89, 6788.1, 2604.89],
@@ -45,9 +52,9 @@ export const CONFIG = {
   sky: {
     // Real CC0 HDRIs from Poly Haven.
     hdri: {
-      day: '/assets/env/kloofendal_48d_partly_cloudy_puresky.hdr',
-      sunset: '/assets/env/belfast_sunset_puresky.hdr',
-      night: '/assets/env/moonless_golf.hdr',
+      day: asset('/assets/env/kloofendal_48d_partly_cloudy_puresky.hdr'),
+      sunset: asset('/assets/env/belfast_sunset_puresky.hdr'),
+      night: asset('/assets/env/moonless_golf.hdr'),
     },
   },
 
@@ -66,7 +73,7 @@ export const CONFIG = {
   vehicles: {
     car: {
       label: 'গাড়ি',
-      model: '/assets/vehicles/car.glb',
+      model: asset('/assets/vehicles/car.glb'),
       // Real dimensions measured from the GLB: 2.05 x 1.32 x 5.00 m.
       length: 5.0,
       width: 2.05,
@@ -83,7 +90,7 @@ export const CONFIG = {
     },
     truck: {
       label: 'ট্রাক',
-      model: '/assets/vehicles/traffic-car.glb',
+      model: asset('/assets/vehicles/traffic-car.glb'),
       length: 4.62,
       width: 2.3,
       wheelRadius: 0.4,
@@ -98,7 +105,7 @@ export const CONFIG = {
     },
     helicopter: {
       label: 'হেলিকপ্টার',
-      model: '/assets/air/helicopter.glb',
+      model: asset('/assets/air/helicopter.glb'),
       // Measured from the GLB: 14.4 x 5.5 x 15.5 m.
       length: 15.5,
       maxSpeed: 92,
@@ -112,7 +119,7 @@ export const CONFIG = {
     },
     plane: {
       label: 'প্লেন',
-      model: '/assets/air/airplane.glb',
+      model: asset('/assets/air/airplane.glb'),
       length: 8.0,
       // The GLB is authored at ~0.29 m; it is scaled up to a real wingspan.
       baseScale: 30,
@@ -127,7 +134,7 @@ export const CONFIG = {
     },
     jet: {
       label: 'জেট',
-      model: '/assets/air/jet.glb',
+      model: asset('/assets/air/jet.glb'),
       length: 15,
       maxSpeed: 260,
       accel: 46,
@@ -139,7 +146,7 @@ export const CONFIG = {
     },
     drone: {
       label: 'ড্রোন',
-      model: '/assets/air/drone.glb',
+      model: asset('/assets/air/drone.glb'),
       length: 2.4,
       baseScale: 12,
       maxSpeed: 40,
@@ -152,7 +159,7 @@ export const CONFIG = {
     },
     floatplane: {
       label: 'সিপ্লেন',
-      model: '/assets/air/floatplane.glb',
+      model: asset('/assets/air/floatplane.glb'),
       length: 11,
       baseScale: 0.00004,
       maxSpeed: 110,
@@ -168,15 +175,15 @@ export const CONFIG = {
   agents: {
     models: {
       // Real CC0 animated characters (KayKit Adventurers / Skeletons).
-      knight: '/assets/characters/knight.glb',
-      mage: '/assets/characters/mage.glb',
-      rogue: '/assets/characters/rogue.glb',
-      barbarian: '/assets/characters/barbarian.glb',
-      skeleton: '/assets/characters/skeleton-warrior.glb',
-      skeletonMage: '/assets/characters/skeleton-mage.glb',
+      knight: asset('/assets/characters/knight.glb'),
+      mage: asset('/assets/characters/mage.glb'),
+      rogue: asset('/assets/characters/rogue.glb'),
+      barbarian: asset('/assets/characters/barbarian.glb'),
+      skeleton: asset('/assets/characters/skeleton-warrior.glb'),
+      skeletonMage: asset('/assets/characters/skeleton-mage.glb'),
       // three.js examples, kept as extra rigs.
-      xbot: '/assets/characters/xbot.glb',
-      robot: '/assets/characters/robot.glb',
+      xbot: asset('/assets/characters/xbot.glb'),
+      robot: asset('/assets/characters/robot.glb'),
     },
     // KayKit characters are authored ~1.8 units tall and face +Z, so only a
     // facing correction is needed. The three.js rigs need a height normalise.
@@ -237,7 +244,7 @@ export const CONFIG = {
   },
 
   interior: {
-    assetBase: '/assets/interior',
+    assetBase: asset('/assets/interior'),
     cacheSize: 6,
     // How close to a doorway the player must be for the enter prompt.
     promptRange: 6,

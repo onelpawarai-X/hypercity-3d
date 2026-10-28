@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  // Relative base: the same build works at the domain root, on GitHub Pages
+  // under /<repo>/, and from a local file server, with no rebuild per host.
+  base: './',
   server: {
     host: '0.0.0.0',
     port: 12000,
