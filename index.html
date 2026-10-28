@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>HyperCity 3D — এআই এজেন্টদের জন্য খোলা থ্রিডি শহর</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <canvas id="app"></canvas>
+
+  <!-- ============ LOADING ============ -->
+  <div id="loader">
+    <div class="loader-inner">
+      <div class="logo">HYPER<span>CITY</span> 3D</div>
+      <div class="tagline">আসল থ্রিডি শহর · আসল গাড়ি · বিমান · হেলিকপ্টার · এআই এজেন্ট</div>
+      <div class="bar"><div id="bar-fill"></div></div>
+      <div id="load-status">শুরু হচ্ছে…</div>
+      <div class="credit">
+        World: OpenStreetMap (ODbL) · Vehicles: Khronos CarConcept (CC BY 4.0) ·
+        Aircraft: ir-engine (Apache-2.0) · Characters: three.js/Mixamo · Nature: Poly Haven (CC0)
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ HUD ============ -->
+  <div id="hud" class="hidden">
+    <div id="crosshair"></div>
+    <div id="damage-flash"></div>
+
+    <div id="topbar">
+      <div class="panel" id="stats">
+        <span id="fps">–</span> FPS
+        <span class="sep"></span>
+        <span id="mode-label">পায়ে হাঁটা</span>
+      </div>
+      <div class="panel" id="clock">☀ <span id="time-label">12:00</span></div>
+      <div class="panel" id="agents">এআই: <span id="agent-count">0</span></div>
+    </div>
+
+    <div id="combatbar">
+      <div id="health">
+        <span class="cbar-label">❤ প্রাণ</span>
+        <div class="cbar"><div id="health-bar-fill"></div></div>
+        <span id="health-val">100</span>
+      </div>
+      <div id="weapon-panel">
+        <span id="weapon-label">মুষ্টি</span>
+        <span id="ammo-val">∞</span>
+      </div>
+      <div id="factions"><span id="faction-val">সাধারণ 0 · গ্যাং 0 · পুলিশ 0</span></div>
+    </div>
+
+    <div id="minimap-wrap">
+      <canvas id="minimap" width="200" height="200"></canvas>
+      <div id="minimap-n">N</div>
+      <div id="speedo" class="hidden">
+        <div id="speed-val">0</div><div id="speed-unit">km/h</div>
+        <div id="speed-bar"><div id="speed-bar-fill"></div></div>
+      </div>
+      <div id="altimeter" class="hidden">
+        <div id="alt-val">0</div><div id="alt-unit">m উচ্চতা</div>
+      </div>
+    </div>
+
+    <div id="prompt" class="hidden"></div>
+
+    <div id="help">
+      <b>চালানোর নিয়ম</b>
+      <div class="row"><kbd>W A S D</kbd> চলা / চালানো</div>
+      <div class="row"><kbd>Shift</kbd> দৌড় / বুস্ট</div>
+      <div class="row"><kbd>Space</kbd> লাফ / ব্রেক / উঠা</div>
+      <div class="row"><kbd>Ctrl</kbd> নামা</div>
+      <div class="row"><kbd>মাউস ক্লিক</kbd> ঘুষি / গুলি</div>
+      <div class="row"><kbd>Q</kbd> অস্ত্র বদল (মুষ্টি → পিস্তল → রাইফেল)</div>
+      <div class="row"><kbd>E</kbd> গাড়ি চালাও / ঘরে ঢোকো / বের হও</div>
+      <div class="row"><kbd>1</kbd>–<kbd>6</kbd> স্পন: গাড়ি, ট্রাক, প্লেন, হেলিকপ্টার, জেট, ড্রোন</div>
+      <div class="row"><kbd>F</kbd> প্রথম/তৃতীয় পুরুষ ক্যামেরা</div>
+      <div class="row"><kbd>T</kbd> সময় (দিন/রাত) · <kbd>G</kbd> এআই এজেন্ট স্পন</div>
+      <div class="row"><kbd>H</kbd> সাহায্য · <kbd>R</kbd> রিসেট · <kbd>Esc</kbd> মাউস ছাড়ো</div>
+    </div>
+
+    <div id="death-screen" class="hidden">
+      <div class="death-card">
+        <h2>তুমি শহরের রাস্তায় পড়ে আছো</h2>
+        <p>গ্যাং তোমাকে হারিয়ে দিয়েছে।</p>
+        <button id="respawn-btn">আবার ওঠো</button>
+      </div>
+    </div>
+
+    <div id="toast"></div>
+  </div>
+
+  <!-- ============ START ============ -->
+  <div id="start" class="hidden">
+    <div class="start-card">
+      <div class="logo">HYPER<span>CITY</span> 3D</div>
+      <p class="sub">একটি খোলা থ্রিডি শহর — মানুষ ও এআই এজেন্ট, একই জগতে।</p>
+      <div class="controls-grid">
+        <div><kbd>W A S D</kbd> হাঁটা / গাড়ি চালানো</div>
+        <div><kbd>মাউস</kbd> চারপাশে তাকানো</div>
+        <div><kbd>ক্লিক</kbd> ঘুষি / গুলি · <kbd>Q</kbd> অস্ত্র বদল</div>
+        <div><kbd>E</kbd> গাড়ি চালাও · ঘরের ভিতরে ঢোকো</div>
+        <div><kbd>1</kbd>…<kbd>6</kbd> যানবাহন স্পন</div>
+        <div><kbd>F</kbd> ক্যামেরা বদল · <kbd>G</kbd> এআই এজেন্ট</div>
+      </div>
+      <p class="sub touch-note hidden" id="touch-note">মোবাইলে: বাঁ দিকের স্টিক দিয়ে চলো, ডান দিকে টেনে তাকাও, ডান পাশের বোতামে লাফ/ঘুষি/গাড়ি।</p>
+      <button id="start-btn">খেলা শুরু করো</button>
+      <div class="credit">
+        World © OpenStreetMap contributors (ODbL-1.0) · Vehicle: Khronos CarConcept © Darmstadt Graphics Group / Eric Chadwick (CC BY 4.0) ·
+        Aircraft: ir-engine assets (Apache-2.0) · Characters: KayKit by Kay Lousberg (CC0) + three.js/Mixamo ·
+        Interior: Poly Haven (CC0) · Sky: Poly Haven (CC0)
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
