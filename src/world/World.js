@@ -100,8 +100,13 @@ export class World {
   }
 
   /** Cull distant city chunks and vegetation tiles against the camera. */
-  updateChunks(cameraPosition) {
+  updateChunks(cameraPosition, elapsed = 0) {
     for (const c of this.chunked) c.update(cameraPosition);
+    // Drive the foliage wind. One shared time uniform per material, so all
+    // 1800 trees are animated without touching a single instance matrix.
+    if (this._windMaterials) {
+      for (const m of this._windMaterials.values()) m.userData.wind.value = elapsed;
+    }
     // Vegetation is far cheaper to draw than the city, so it survives a
     // little further out; beyond that the tiles are hidden outright.
     const max2 = (CONFIG.render.drawDistance * 1.2) ** 2;
@@ -239,7 +244,8 @@ export class World {
 
     for (const tile of tiles.values()) {
       for (const mesh of parts) {
-        const inst = new THREE.InstancedMesh(mesh.geometry, mesh.material, tile.length);
+        const material = this._windMaterial(mesh.material, name);
+        const inst = new THREE.InstancedMesh(mesh.geometry, material, tile.length);
         inst.name = `${name}_${mesh.name}`;
         inst.castShadow = true;
         inst.receiveShadow = true;
@@ -262,6 +268,39 @@ export class World {
         });
       }
     }
+  }
+
+  /**
+   * A copy of the foliage material with a wind sway injected into its vertex
+   * shader. Displacement grows with height above the trunk, so the crown moves
+   * and the base stays planted.
+   */
+  _windMaterial(material, kind) {
+    if (!this._windMaterials) this._windMaterials = new Map();
+    if (this._windMaterials.has(material.uuid)) return this._windMaterials.get(material.uuid);
+
+    const m = material.clone();
+    m.userData.wind = { value: 0 };
+    m.onBeforeCompile = (shader) => {
+      shader.uniforms.uWindTime = m.userData.wind;
+      shader.uniforms.uWindStrength = { value: kind === 'palms' ? 0.55 : 0.32 };
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', `#include <common>
+          uniform float uWindTime;
+          uniform float uWindStrength;`)
+        .replace('#include <begin_vertex>', `#include <begin_vertex>
+          #ifdef USE_INSTANCING
+            // Phase comes from the instance's own position, so neighbouring
+            // trees never sway in lockstep and the tint is left untouched.
+            float phase = fract(dot(instanceMatrix[3].xz, vec2(0.37, 0.71))) * 6.2831;
+            float gust = sin(uWindTime * 1.3 + phase) * 0.6 + sin(uWindTime * 2.7 + phase * 1.7) * 0.4;
+            float bend = uWindStrength * gust * smoothstep(0.5, 5.0, max(transformed.y, 0.0));
+            transformed.x += bend;
+            transformed.z += bend * 0.45;
+          #endif`);
+    };
+    this._windMaterials.set(material.uuid, m);
+    return m;
   }
 
   // ---------------------------------------------------------------- queries

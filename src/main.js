@@ -556,7 +556,7 @@ class Game {
     // ---- city streaming --------------------------------------------------
     // Only the chunks near the camera are drawn; this is what keeps the
     // five-million-triangle city interactive.
-    this.world.updateChunks(this.camera.position);
+    this.world.updateChunks(this.camera.position, this.elapsed);
 
     // ---- camera ----------------------------------------------------------
     const entity = this._cameraEntity();
