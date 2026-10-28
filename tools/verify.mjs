@@ -55,6 +55,23 @@ check('start screen lets you pick from the real character roster',
 await page.click('#start-btn');
 await new Promise((r) => setTimeout(r, 1500));
 
+// ---- keyboard controls match the on-screen help --------------------------
+// The help panel promises Q cycles the weapon; this guards the wiring that
+// makes that true.
+const keys = await page.evaluate(async () => {
+  const label = () => document.getElementById('weapon-label').textContent;
+  const seq = [label()];
+  for (let i = 0; i < 3; i++) {
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyQ' }));
+    await new Promise((r) => setTimeout(r, 100));
+    seq.push(label());
+  }
+  return seq;
+});
+check('Q cycles the weapon as the help panel says',
+  keys.length === 4 && new Set(keys.slice(0, 3)).size === 3,
+  keys.join(' → '));
+
 await page.evaluate(() => {
   window.__probe = () => {
     const g = window.game;

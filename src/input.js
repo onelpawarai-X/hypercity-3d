@@ -58,6 +58,7 @@ export class Input {
       case 'KeyH': this.emit('help'); break;
       case 'KeyR': this.emit('reset'); break;
       case 'KeyC': this.emit('clearcars'); break;
+      case 'KeyQ': this.emit('weapon'); break;
       case 'Digit1': this.emit('spawn', 'car'); break;
       case 'Digit2': this.emit('spawn', 'truck'); break;
       case 'Digit3': this.emit('spawn', 'plane'); break;
