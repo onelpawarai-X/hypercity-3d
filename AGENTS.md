@@ -15,8 +15,31 @@ node tools/verify.mjs    # end-to-end gameplay checks (needs the dev server)
 python3 tools/rl_smoke.py  # exercises the gym-style API over the relay
 ```
 
-`tools/verify.mjs` and `tools/rl_smoke.py` both take a `URL` env var, so they
-can be pointed at the public tunnel instead of localhost.
+`tools/verify.mjs`, `tools/api_check.mjs` and `tools/shots.mjs` all take a `URL`
+env var (or a first argument), so they can be pointed at any deployment.
+
+## Deployment
+
+The game is published to GitHub Pages at
+`https://onelpawarai-x.github.io/hypercity-3d/` from `.github/workflows/pages.yml`,
+which builds `dist/` on every push to `main`. Nothing runs on a server, so the
+link is permanent.
+
+This is why `vite.config.js` sets `base: './'` and `src/config.js` routes every
+public path through `asset()`: a Pages build is served from `/<repo>/`, not the
+domain root. Absolute `/assets/...` paths work locally and 404 there. Test a
+sub-path build before assuming a deployment is fine:
+
+```bash
+npx vite build && mkdir -p /tmp/sub/game && cp -r dist/* /tmp/sub/game/
+(cd /tmp/sub && python3 -m http.server 12050) &
+URL=http://localhost:12050/game/ node tools/verify.mjs
+```
+
+The training relay is a local process and has no equivalent on a static host.
+On Pages, use `window.HyperCity` in the page (`tools/api_check.mjs`); over a
+tunnel or the dev server, `/relay` is proxied and the WebSocket transport works
+(`tools/rl_smoke.py`).
 
 ## Layout
 

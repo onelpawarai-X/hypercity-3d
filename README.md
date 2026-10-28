@@ -5,6 +5,14 @@ environment you can train large agents inside. Every model is downloaded from
 a credited source; nothing in the world is a procedural stand-in. See
 [CREDITS.md](CREDITS.md) for the full asset list and licences.
 
+## Play it now
+
+**https://onelpawarai-x.github.io/hypercity-3d/**
+
+Served as a static build from GitHub Pages, so the link is permanent and does
+not depend on any machine staying up. First load streams ~199 MB of real
+assets, so give it a minute on a slow connection.
+
 ## What is in it
 
 - A 13 km × 5 km city derived from real OpenStreetMap data (Shenzhen): 16,076
@@ -63,7 +71,8 @@ distanceToGoal, stuck, nearestAgentDistance]` — and actions are 4 floats.
 
 ```bash
 node tools/verify.mjs       # end-to-end: load, drive, fly, interiors, combat, respawn
-URL=<tunnel-url> node tools/verify.mjs   # the same checks through a public tunnel
+URL=<url> node tools/verify.mjs   # the same checks against any deployment
+node tools/api_check.mjs    # the training API in-page, no relay needed
 ```
 
 ## Project layout

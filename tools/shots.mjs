@@ -3,7 +3,7 @@ const b = await puppeteer.launch({ executablePath:'/usr/bin/chromium', headless:
   args:['--no-sandbox','--use-gl=swiftshader','--enable-unsafe-swiftshader','--disable-dev-shm-usage'] });
 const p = await b.newPage();
 await p.setViewport({ width: 1440, height: 900 });
-await p.goto('http://localhost:12000/',{waitUntil:'domcontentloaded'});
+await p.goto(process.env.URL || 'http://localhost:12000/',{waitUntil:'domcontentloaded'});
 await p.waitForSelector('#start:not(.hidden)', { timeout: 300000 });
 await p.screenshot({ path: '/tmp/s0-menu.png' });
 await p.click('#start-btn');
