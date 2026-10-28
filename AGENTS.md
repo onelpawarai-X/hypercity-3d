@@ -114,3 +114,17 @@ match the reply. The `make` command therefore returns `{ env, agentId }`.
 - Under software rendering the game runs at ~20 fps regardless of scene
   complexity, so never assert on frame rate. Poll for the state you want
   instead of sleeping a fixed time (see `driveUntil` in `tools/verify.mjs`).
+- To prove a `CharacterSelect` preview actually drew something, render and
+  `readPixels` in the same task. Reading back after the animation loop has
+  presented the frame returns all zeros, because the buffer is already gone.
+- `tools/*.mjs` one-off probes are throwaway; delete them when the bug they
+  chased is fixed. Durable checks belong in `tools/verify.mjs` or
+  `tools/api_check.mjs`.
+
+## Publishing
+
+The `GITHUB_TOKEN` available here has read-only access to
+`onelpawarai-X/hypercity-3d` (`permissions.push` is false), so an agent cannot
+push to `main` and trigger the Pages deploy. Work lands on the local `master`
+branch; the user pushes it, or grants a token with `contents: write`.
+
