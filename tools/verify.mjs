@@ -139,12 +139,26 @@ await page.evaluate(async () => {
       { controlMode: 'auto', faction: 'gang' });
   }
 });
-await new Promise((r) => setTimeout(r, 20000));
-const fought = await page.evaluate(() => ({
-  hp: window.game.player.health,
-  events: window.game.combat.events.length,
-  police: window.game.agents.factions.police,
-}));
+// The gang has to walk to the player before it can hit them, and under
+// software rendering that walk takes a variable number of frames. Poll for
+// the damage rather than trusting one fixed wait.
+const fought = await (async () => {
+  const deadline = Date.now() + 60000;
+  let state = await page.evaluate(() => ({
+    hp: window.game.player.health,
+    events: window.game.combat.events.length,
+    police: window.game.agents.factions.police,
+  }));
+  while (Date.now() < deadline && state.hp >= 100 && state.events === 0) {
+    await new Promise((r) => setTimeout(r, 1500));
+    state = await page.evaluate(() => ({
+      hp: window.game.player.health,
+      events: window.game.combat.events.length,
+      police: window.game.agents.factions.police,
+    }));
+  }
+  return state;
+})();
 check('AI gang attacks the player and deals damage', fought.hp < 100 || fought.events > 0,
   `hp=${fought.hp} events=${fought.events}`);
 
