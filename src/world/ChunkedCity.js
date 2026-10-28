@@ -33,7 +33,7 @@ export class ChunkedCity {
     this.stats = { sourceMeshes: 0, chunkMeshes: 0, triangles: 0, mergeFailures: 0 };
   }
 
-  async load(url, { castShadow = false, receiveShadow = true } = {}) {
+  async load(url, { castShadow = false, receiveShadow = true, source = '' } = {}) {
     const gltf = await loadGLTF(url);
     gltf.scene.updateMatrixWorld(true);
 
@@ -91,12 +91,12 @@ export class ChunkedCity {
         for (const entry of bucket.entries) {
           const g = this._dequantize(entry.geometry.clone());
           g.applyMatrix4(entry.matrixWorld);
-          this._pushChunk(g, bucket.material, tmpBox, castShadow, receiveShadow);
+          this._pushChunk(g, bucket.material, tmpBox, castShadow, receiveShadow, source);
         }
         continue;
       }
       for (const g of geoms) if (g !== merged) g.dispose();
-      this._pushChunk(merged, bucket.material, tmpBox, castShadow, receiveShadow);
+      this._pushChunk(merged, bucket.material, tmpBox, castShadow, receiveShadow, source);
     }
 
     this._countTriangles();
@@ -139,7 +139,7 @@ export class ChunkedCity {
   }
 
   /** `geometry` must already be in world space and owned by this instance. */
-  _pushChunk(geometry, material, tmpBox, castShadow, receiveShadow) {
+  _pushChunk(geometry, material, tmpBox, castShadow, receiveShadow, source = '') {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.castShadow = castShadow;
     mesh.receiveShadow = receiveShadow;
@@ -150,7 +150,7 @@ export class ChunkedCity {
     tmpBox.setFromObject(mesh);
     const center = tmpBox.getCenter(new THREE.Vector3());
     const radius = tmpBox.getSize(new THREE.Vector3()).length() * 0.5;
-    this.chunks.push({ mesh, center, radius, castShadow });
+    this.chunks.push({ mesh, center, radius, castShadow, source });
     this.stats.chunkMeshes++;
   }
 

@@ -253,8 +253,7 @@ export class Agent {
       }
     }
 
-    const res = this.world.resolveCollision(nx, nz, this.radius);
-    const b = this.world.clampToBounds(res.x, res.z);
+    const b = this.world.moveWithCollision(this.position.x, this.position.z, nx, nz, this.radius);
     this.position.x = b.x;
     this.position.z = b.z;
 

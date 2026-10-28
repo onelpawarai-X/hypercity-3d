@@ -89,8 +89,11 @@ export class PlayerController {
       const res = this.interiorSystem.resolveCollision(nx - o.x, nz - o.z, this.radius);
       return { x: res.x + o.x, z: res.z + o.z };
     }
-    const res = this.world.resolveCollision(nx, nz, this.radius);
-    return this.world.clampToBounds(res.x, res.z);
+    // Swept move from the current position: never accepts a step that would put
+    // the player inside a building, so walls cannot be passed through.
+    return this.world.moveWithCollision(
+      this.position.x, this.position.z, nx, nz, this.radius,
+    );
   }
 
   setIntent(intent) {
