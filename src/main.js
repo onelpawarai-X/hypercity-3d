@@ -731,6 +731,10 @@ async function boot() {
     return;
   }
 
+  // Draw one frame of the city behind the menu so the start screen sits on a
+  // real backdrop instead of black. The canvas keeps the last frame.
+  game.renderer.render(game.scene, game.camera);
+
   const startEl = document.getElementById('start');
   startEl.classList.remove('hidden');
   document.getElementById('loader').classList.add('hidden');
