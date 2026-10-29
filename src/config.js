@@ -184,6 +184,8 @@ export const CONFIG = {
       // three.js examples, kept as extra rigs.
       xbot: asset('/assets/characters/xbot.glb'),
       robot: asset('/assets/characters/robot.glb'),
+      // Modern rig used for the city crowd and for the playable roster.
+      soldier: asset('/assets/characters/soldier.glb'),
     },
     // KayKit characters are authored ~1.8 units tall and face +Z, so only a
     // facing correction is needed. The three.js rigs need a height normalise.
@@ -196,6 +198,7 @@ export const CONFIG = {
       skeletonMage: { targetHeight: 1.8, yawOffset: 0 },
       xbot: { targetHeight: 1.78, yawOffset: Math.PI },
       robot: { targetHeight: 2.35, yawOffset: 0 },
+      soldier: { targetHeight: 1.8, yawOffset: Math.PI },
     },
     // The four adventurer classes are the crowd; skeletons are the gang.
     archetypes: ['knight', 'mage', 'rogue', 'barbarian'],
@@ -206,6 +209,16 @@ export const CONFIG = {
     maxAmbient: 90,
     radius: 0.4,
     height: 1.75,
+    // The playable roster offered on the start screen. Each is a real,
+    // separately downloaded rig with its own animations.
+    roster: [
+      { id: 'soldier', label: 'সৈনিক', blurb: 'আধুনিক শহরের যোদ্ধা' },
+      { id: 'knight', label: 'নাইট', blurb: 'ভারী বর্মের রক্ষক' },
+      { id: 'rogue', label: 'রোগ', blurb: 'দ্রুত ও চটপটে' },
+      { id: 'mage', label: 'মেজ', blurb: 'জাদুর ব্যবহারকারী' },
+      { id: 'barbarian', label: 'বারবারিয়ান', blurb: 'শক্তিশালী আঘাত' },
+      { id: 'robot', label: 'রোবট', blurb: 'যন্ত্রমানব' },
+    ],
   },
 
   combat: {

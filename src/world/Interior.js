@@ -367,28 +367,39 @@ export class InteriorSystem {
         else pz = c.maxZ + radius;
       }
     }
-    // Keep the player inside the room shell, except across the doorway, where
-    // the clamp is widened to the door span so the player can walk out.
+    // Keep the player inside the room shell, except through the doorway. The
+    // corridor is a full-width slot running from a little way inside the door
+    // wall out past the building face, so walking out does not get snapped
+    // back the moment the player clears the wall plane.
     const b = interior.bounds;
     const d = interior.doorAt;
     const half = (interior.doorWidth ?? 1.6) / 2;
-    const inDoorway = d && (
-      d.horizontal
-        ? Math.abs(pz - d.z) < 0.9 && Math.abs(px - d.x) < half - radius * 0.5
-        : Math.abs(px - d.x) < 0.9 && Math.abs(pz - d.z) < half - radius * 0.5
-    );
-    if (inDoorway) {
-      // Only the axis the door is on may be left; the other stays clamped.
-      if (d.horizontal) {
-        px = clamp(px, b.x0 + radius, b.x1 - radius);
-        const outward = interior.doorSide === 'south' ? 1 : -1;
-        const limit = outward > 0 ? b.z1 + 2.5 : b.z0 - 2.5;
-        pz = outward > 0 ? Math.min(pz, limit) : Math.max(pz, limit);
+    const lateral = half - radius * 0.5;
+    const outward = interior.doorSide === 'east' || interior.doorSide === 'south' ? 1 : -1;
+
+    if (d && d.horizontal) {
+      const beyond = outward > 0 ? pz > b.z1 : pz < b.z0;
+      const aligned = Math.abs(px - d.x) < lateral;
+      const insideEdge = outward > 0 ? b.z1 - 1.2 : b.z0 + 1.2;
+      const limit = outward > 0 ? b.z1 + 2.5 : b.z0 - 2.5;
+      if (aligned && (beyond || (outward > 0 ? pz > insideEdge : pz < insideEdge))) {
+        px = clamp(px, d.x - lateral, d.x + lateral);
+        pz = outward > 0 ? clamp(pz, insideEdge, limit) : clamp(pz, limit, insideEdge);
       } else {
+        px = clamp(px, b.x0 + radius, b.x1 - radius);
         pz = clamp(pz, b.z0 + radius, b.z1 - radius);
-        const outward = interior.doorSide === 'east' ? 1 : -1;
-        const limit = outward > 0 ? b.x1 + 2.5 : b.x0 - 2.5;
-        px = outward > 0 ? Math.min(px, limit) : Math.max(px, limit);
+      }
+    } else if (d) {
+      const beyond = outward > 0 ? px > b.x1 : px < b.x0;
+      const aligned = Math.abs(pz - d.z) < lateral;
+      const insideEdge = outward > 0 ? b.x1 - 1.2 : b.x0 + 1.2;
+      const limit = outward > 0 ? b.x1 + 2.5 : b.x0 - 2.5;
+      if (aligned && (beyond || (outward > 0 ? px > insideEdge : px < insideEdge))) {
+        pz = clamp(pz, d.z - lateral, d.z + lateral);
+        px = outward > 0 ? clamp(px, insideEdge, limit) : clamp(px, limit, insideEdge);
+      } else {
+        px = clamp(px, b.x0 + radius, b.x1 - radius);
+        pz = clamp(pz, b.z0 + radius, b.z1 - radius);
       }
     } else {
       px = clamp(px, b.x0 + radius, b.x1 - radius);

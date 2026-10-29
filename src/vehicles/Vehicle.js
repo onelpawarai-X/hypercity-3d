@@ -146,11 +146,12 @@ export class CarVehicle extends Vehicle {
     const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(Y_AXIS, this.heading);
     const nx = this.position.x + forward.x * this.speed * dt;
     const nz = this.position.z + forward.z * this.speed * dt;
-    const res = this.world.resolveCollision(nx, nz, this.radius);
-    if (Math.abs(res.x - nx) > 1e-4 || Math.abs(res.z - nz) > 1e-4) {
+    const b = this.world.moveWithCollision(
+      this.position.x, this.position.z, nx, nz, this.radius,
+    );
+    if (Math.abs(b.x - nx) > 1e-3 || Math.abs(b.z - nz) > 1e-3) {
       this.speed *= 0.28; // hit a wall
     }
-    const b = this.world.clampToBounds(res.x, res.z);
     this.position.x = b.x;
     this.position.z = b.z;
 
@@ -254,7 +255,7 @@ export class AircraftVehicle extends Vehicle {
 
     // Only test building collision while low enough to actually hit one.
     if (ny < 320) {
-      const res = this.world.resolveCollision(nx, nz, this.radius);
+      const res = this.world.moveWithCollision(this.position.x, this.position.z, nx, nz, this.radius);
       if (res.x !== nx || res.z !== nz) {
         this.velocity.multiplyScalar(0.25);
         nx = res.x; nz = res.z;
@@ -298,7 +299,7 @@ export class AircraftVehicle extends Vehicle {
     ny = Math.min(ny, 4000);
 
     if (ny < 320) {
-      const res = this.world.resolveCollision(nx, nz, this.radius);
+      const res = this.world.moveWithCollision(this.position.x, this.position.z, nx, nz, this.radius);
       if (res.x !== nx || res.z !== nz) {
         this.speed *= 0.2;
         nx = res.x; nz = res.z;

@@ -33,7 +33,7 @@ export class ChunkedCity {
     this.stats = { sourceMeshes: 0, chunkMeshes: 0, triangles: 0, mergeFailures: 0 };
   }
 
-  async load(url, { castShadow = false, receiveShadow = true } = {}) {
+  async load(url, { castShadow = false, receiveShadow = true, source = '' } = {}) {
     const gltf = await loadGLTF(url);
     gltf.scene.updateMatrixWorld(true);
 
@@ -70,7 +70,7 @@ export class ChunkedCity {
       const anyIndexed = bucket.entries.some((e) => !!e.geometry.index);
 
       for (const entry of bucket.entries) {
-        let g = entry.geometry.clone();
+        let g = this._dequantize(entry.geometry.clone());
         if (anyIndexed && !allIndexed) g = g.toNonIndexed();
         for (const name of Object.keys(g.attributes)) {
           if (!shared.has(name)) g.deleteAttribute(name);
@@ -89,18 +89,43 @@ export class ChunkedCity {
         // Fall back to the unmerged meshes for this bucket.
         this.stats.mergeFailures++;
         for (const entry of bucket.entries) {
-          const g = entry.geometry.clone();
+          const g = this._dequantize(entry.geometry.clone());
           g.applyMatrix4(entry.matrixWorld);
-          this._pushChunk(g, bucket.material, tmpBox, castShadow, receiveShadow);
+          this._pushChunk(g, bucket.material, tmpBox, castShadow, receiveShadow, source);
         }
         continue;
       }
       for (const g of geoms) if (g !== merged) g.dispose();
-      this._pushChunk(merged, bucket.material, tmpBox, castShadow, receiveShadow);
+      this._pushChunk(merged, bucket.material, tmpBox, castShadow, receiveShadow, source);
     }
 
     this._countTriangles();
     return this;
+  }
+
+  /**
+   * KHR_mesh_quantization stores positions as normalized integers and puts the
+   * real scale on the node transform. `BufferGeometry.applyMatrix4` writes the
+   * transformed values back with `setXYZ`, which re-quantizes them into the same
+   * integer range - so applying a 2732x node scale to a normalized Int16 buffer
+   * collapses the geometry to a point instead of scaling it up. Widen every
+   * non-float attribute to Float32 first, using the denormalized values three
+   * would have read, so the transform has somewhere to land.
+   */
+  _dequantize(geometry) {
+    for (const [name, attr] of Object.entries(geometry.attributes)) {
+      if (attr.array instanceof Float32Array) continue;
+      const n = attr.itemSize;
+      const out = new Float32Array(attr.count * n);
+      for (let i = 0; i < attr.count; i++) {
+        out[i * n] = attr.getX(i);
+        if (n > 1) out[i * n + 1] = attr.getY(i);
+        if (n > 2) out[i * n + 2] = attr.getZ(i);
+        if (n > 3) out[i * n + 3] = attr.getW(i);
+      }
+      geometry.setAttribute(name, new THREE.BufferAttribute(out, n, false));
+    }
+    return geometry;
   }
 
   _sharedAttributes(entries) {
@@ -114,7 +139,7 @@ export class ChunkedCity {
   }
 
   /** `geometry` must already be in world space and owned by this instance. */
-  _pushChunk(geometry, material, tmpBox, castShadow, receiveShadow) {
+  _pushChunk(geometry, material, tmpBox, castShadow, receiveShadow, source = '') {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.castShadow = castShadow;
     mesh.receiveShadow = receiveShadow;
@@ -125,7 +150,7 @@ export class ChunkedCity {
     tmpBox.setFromObject(mesh);
     const center = tmpBox.getCenter(new THREE.Vector3());
     const radius = tmpBox.getSize(new THREE.Vector3()).length() * 0.5;
-    this.chunks.push({ mesh, center, radius, castShadow });
+    this.chunks.push({ mesh, center, radius, castShadow, source });
     this.stats.chunkMeshes++;
   }
 

@@ -16,6 +16,7 @@ import { CombatSystem, PlayerCombat, CombatDirector } from './systems/Combat.js'
 import { PoliceSystem } from './systems/Police.js';
 import { QualityManager } from './systems/Quality.js';
 import { TouchControls } from './systems/TouchControls.js';
+import { CharacterSelect } from './systems/CharacterSelect.js';
 import { clamp, rand, pick } from './utils.js';
 
 /**
@@ -93,7 +94,8 @@ class Game {
     await this._preloadCharacters();
 
     onProgress?.(0.9, 'প্লেয়ার ও যুদ্ধ সিস্টেম');
-    const playerRig = this.characterCache.get('knight').clone();
+    const playerRig = this.characterCache.get(CONFIG.agents.roster[0].id).clone();
+    this.playerCharacter = CONFIG.agents.roster[0].id;
     this.player = new PlayerController(this.world, playerRig);
     this.scene.add(playerRig.root);
     this.cameraRig.snapTo(this.player, { firstPerson: false, mode: MODES.WALK });
@@ -111,6 +113,11 @@ class Game {
     this.quality = new QualityManager(this);
     this.quality.index = this.quality.detectInitialTier();
 
+    this.characterSelect = new CharacterSelect(document.getElementById('roster'));
+    await this.characterSelect.build(async (id) => this.characterCache.get(id));
+    this.characterSelect.onChange = (id) => this.setPlayerCharacter(id);
+    this.setPlayerCharacter(this.characterSelect.selected);
+
     this.bridge = new TrainingBridge(this, { port: 12001 });
 
     this._bindInput();
@@ -122,7 +129,11 @@ class Game {
 
   async _preloadCharacters() {
     const rigs = CONFIG.agents.rigs;
-    const entries = Object.entries(CONFIG.agents.models);
+    // The playable roster first: the start screen needs these to draw its
+    // live previews before anything else is shown.
+    const roster = CONFIG.agents.roster.map((e) => [e.id, CONFIG.agents.models[e.id]]);
+    const rest = Object.entries(CONFIG.agents.models).filter(([k]) => !CONFIG.agents.roster.some((e) => e.id === k));
+    const entries = [...roster, ...rest];
     for (const [archetype, url] of entries) {
       const rc = rigs[archetype] || { targetHeight: 1.75, yawOffset: Math.PI };
       const rig = await loadCharacter(url, rc);
@@ -201,6 +212,7 @@ class Game {
     this.audio.start();
     if (!this.touchEnabled) this.input.requestLock();
     else this.touch.enable();
+    this.characterSelect?.stopPreview();
     this.quality.apply(this.quality.tiers[this.quality.index]);
     this.hud.toast('স্বাগতম! E চাপো গাড়িতে উঠতে বা ঘরে ঢুকতে · ক্লিকে ঘুষি', 3200);
     this.clock.start();
@@ -462,6 +474,27 @@ class Game {
     this._render(dt);
   }
 
+  /**
+   * Swap the player's character mesh. The controller keeps its position,
+   * heading and physics; only the rig changes, so this is safe mid-game.
+   */
+  setPlayerCharacter(archetype) {
+    const base = this.characterCache.get(archetype);
+    if (!base) return;
+    const rig = base.clone();
+    const old = this.player.rig;
+    if (old) {
+      this.scene.remove(old.root);
+      rig.heading = old.heading;
+      rig.root.rotation.y = old.root.rotation.y;
+    }
+    rig.position.set(this.player.position.x, this.player.position.y, this.player.position.z);
+    this.scene.add(rig.root);
+    this.player.rig = rig;
+    this.playerCharacter = archetype;
+    if (this.player.interiorSystem) rig.root.visible = this.player.thirdPerson;
+  }
+
   _update(dt) {
     const mode = this.mode;
     this.elapsed += dt;
@@ -556,7 +589,7 @@ class Game {
     // ---- city streaming --------------------------------------------------
     // Only the chunks near the camera are drawn; this is what keeps the
     // five-million-triangle city interactive.
-    this.world.updateChunks(this.camera.position);
+    this.world.updateChunks(this.camera.position, this.elapsed);
 
     // ---- camera ----------------------------------------------------------
     const entity = this._cameraEntity();
@@ -698,9 +731,14 @@ async function boot() {
     return;
   }
 
+  // Draw one frame of the city behind the menu so the start screen sits on a
+  // real backdrop instead of black. The canvas keeps the last frame.
+  game.renderer.render(game.scene, game.camera);
+
   const startEl = document.getElementById('start');
   startEl.classList.remove('hidden');
   document.getElementById('loader').classList.add('hidden');
+  game.characterSelect.startPreview();
   document.getElementById('start-btn').addEventListener('click', () => game.start());
 }
 

@@ -75,7 +75,7 @@ export class World {
       drawDistance: cfg.drawDistance,
       shadowDistance: cfg.shadowDistance,
     });
-    await chunked.load(url, { castShadow, receiveShadow: true });
+    await chunked.load(url, { castShadow, receiveShadow: true, source: name });
     this.chunked.push(chunked);
     this.meshes[name] = chunked;
     return chunked;
@@ -100,8 +100,13 @@ export class World {
   }
 
   /** Cull distant city chunks and vegetation tiles against the camera. */
-  updateChunks(cameraPosition) {
+  updateChunks(cameraPosition, elapsed = 0) {
     for (const c of this.chunked) c.update(cameraPosition);
+    // Drive the foliage wind. One shared time uniform per material, so all
+    // 1800 trees are animated without touching a single instance matrix.
+    if (this._windMaterials) {
+      for (const m of this._windMaterials.values()) m.userData.wind.value = elapsed;
+    }
     // Vegetation is far cheaper to draw than the city, so it survives a
     // little further out; beyond that the tiles are hidden outright.
     const max2 = (CONFIG.render.drawDistance * 1.2) ** 2;
@@ -239,7 +244,8 @@ export class World {
 
     for (const tile of tiles.values()) {
       for (const mesh of parts) {
-        const inst = new THREE.InstancedMesh(mesh.geometry, mesh.material, tile.length);
+        const material = this._windMaterial(mesh.material, name);
+        const inst = new THREE.InstancedMesh(mesh.geometry, material, tile.length);
         inst.name = `${name}_${mesh.name}`;
         inst.castShadow = true;
         inst.receiveShadow = true;
@@ -262,6 +268,39 @@ export class World {
         });
       }
     }
+  }
+
+  /**
+   * A copy of the foliage material with a wind sway injected into its vertex
+   * shader. Displacement grows with height above the trunk, so the crown moves
+   * and the base stays planted.
+   */
+  _windMaterial(material, kind) {
+    if (!this._windMaterials) this._windMaterials = new Map();
+    if (this._windMaterials.has(material.uuid)) return this._windMaterials.get(material.uuid);
+
+    const m = material.clone();
+    m.userData.wind = { value: 0 };
+    m.onBeforeCompile = (shader) => {
+      shader.uniforms.uWindTime = m.userData.wind;
+      shader.uniforms.uWindStrength = { value: kind === 'palms' ? 0.55 : 0.32 };
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', `#include <common>
+          uniform float uWindTime;
+          uniform float uWindStrength;`)
+        .replace('#include <begin_vertex>', `#include <begin_vertex>
+          #ifdef USE_INSTANCING
+            // Phase comes from the instance's own position, so neighbouring
+            // trees never sway in lockstep and the tint is left untouched.
+            float phase = fract(dot(instanceMatrix[3].xz, vec2(0.37, 0.71))) * 6.2831;
+            float gust = sin(uWindTime * 1.3 + phase) * 0.6 + sin(uWindTime * 2.7 + phase * 1.7) * 0.4;
+            float bend = uWindStrength * gust * smoothstep(0.5, 5.0, max(transformed.y, 0.0));
+            transformed.x += bend;
+            transformed.z += bend * 0.45;
+          #endif`);
+    };
+    this._windMaterials.set(material.uuid, m);
+    return m;
   }
 
   // ---------------------------------------------------------------- queries
@@ -325,25 +364,99 @@ export class World {
   resolveCollision(x, z, radius) {
     const near = this.buildingGrid.query(x, z, radius + 60);
     let px = x, pz = z;
-    for (const b of near) {
-      if (px < b.minX - radius || px > b.maxX + radius) continue;
-      if (pz < b.minZ - radius || pz > b.maxZ + radius) continue;
-      const inside = pointInPolygon(px, pz, b.ring);
-      const closest = closestPointOnPolygon(px, pz, b.ring);
-      const dx = px - closest.x, dz = pz - closest.z;
-      const d = Math.hypot(dx, dz);
-      if (inside) {
-        // Inside: eject along the nearest edge normal.
+    // Eject and separate, alternating until stable. Separating from one
+    // neighbour can push the point back inside a building it was just ejected
+    // from (dense blocks share walls), so neither pass can be trusted to run
+    // last on its own.
+    for (let round = 0; round < 5; round++) {
+      let moved = false;
+      for (const b of near) {
+        if (px < b.minX - radius || px > b.maxX + radius) continue;
+        if (pz < b.minZ - radius || pz > b.maxZ + radius) continue;
+        if (!pointInPolygon(px, pz, b.ring)) continue;
+        const closest = closestPointOnPolygon(px, pz, b.ring);
+        const dx = px - closest.x, dz = pz - closest.z;
+        const d = Math.hypot(dx, dz);
+        // The normal points from the edge toward the interior, so the exit is
+        // in the opposite direction - adding it would push the player deeper.
         const nx = d > 1e-5 ? dx / d : 1, nz = d > 1e-5 ? dz / d : 0;
-        px = closest.x + nx * (radius + 0.02);
-        pz = closest.z + nz * (radius + 0.02);
-      } else if (d < radius) {
-        const nx = d > 1e-5 ? dx / d : 1, nz = d > 1e-5 ? dz / d : 0;
-        px = closest.x + nx * radius;
-        pz = closest.z + nz * radius;
+        px = closest.x - nx * (radius + 0.02);
+        pz = closest.z - nz * (radius + 0.02);
+        moved = true;
       }
+      for (const b of near) {
+        if (px < b.minX - radius || px > b.maxX + radius) continue;
+        if (pz < b.minZ - radius || pz > b.maxZ + radius) continue;
+        if (pointInPolygon(px, pz, b.ring)) continue;
+        const closest = closestPointOnPolygon(px, pz, b.ring);
+        const dx = px - closest.x, dz = pz - closest.z;
+        const d = Math.hypot(dx, dz);
+        if (d < radius) {
+          const nx = d > 1e-5 ? dx / d : 1, nz = d > 1e-5 ? dz / d : 0;
+          px = closest.x + nx * radius;
+          pz = closest.z + nz * radius;
+          moved = true;
+        }
+      }
+      if (!moved) break;
+    }
+    // Final guarantee: never leave the player inside a wall. The separation
+    // pass above can undo an ejection when blocks share a wall, so one last
+    // eject-only sweep runs with nothing after it. It may leave the point
+    // marginally inside a neighbouring building's margin, which is harmless,
+    // but never inside a wall.
+    for (let pass = 0; pass < 4; pass++) {
+      let moved = false;
+      for (const b of near) {
+        if (px < b.minX - radius || px > b.maxX + radius) continue;
+        if (pz < b.minZ - radius || pz > b.maxZ + radius) continue;
+        if (!pointInPolygon(px, pz, b.ring)) continue;
+        const closest = closestPointOnPolygon(px, pz, b.ring);
+        const dx = px - closest.x, dz = pz - closest.z;
+        const d = Math.hypot(dx, dz);
+        const nx = d > 1e-5 ? dx / d : 1, nz = d > 1e-5 ? dz / d : 0;
+        px = closest.x - nx * (radius + 0.02);
+        pz = closest.z - nz * (radius + 0.02);
+        moved = true;
+      }
+      if (!moved) break;
     }
     return { x: px, z: pz };
+  }
+
+  /**
+   * Moves a circle from (fromX, fromZ) toward (toX, toZ), sliding along walls.
+   *
+   * `resolveCollision` can only fix a point that is already overlapping, and
+   * ejecting such a point pushes it out through whichever face happens to be
+   * nearest - so a fast or diagonal step into a wall can come out the far
+   * side. This never lets that happen: each axis is advanced separately and
+   * only if the result is not inside a footprint. Moving into a wall simply
+   * stops that axis, which is also what gives natural sliding along facades.
+   */
+  moveWithCollision(fromX, fromZ, toX, toZ, radius) {
+    let px = fromX, pz = fromZ;
+    const near = this.buildingGrid.query(toX, toZ, radius + 60);
+    const blocked = (x, z) => {
+      for (const b of near) {
+        if (x < b.minX - radius || x > b.maxX + radius) continue;
+        if (z < b.minZ - radius || z > b.maxZ + radius) continue;
+        if (pointInPolygon(x, z, b.ring)) return true;
+        // Outside the footprint but closer than the radius counts as a hit too,
+        // so the body stops flush against the wall instead of clipping into it.
+        if (closestPointOnPolygon(x, z, b.ring).dist < radius) return true;
+      }
+      return false;
+    };
+    if (!blocked(toX, pz)) px = toX;
+    if (!blocked(px, toZ)) pz = toZ;
+    // If both axes were blocked the point may still overlap from an earlier
+    // frame (a spawn or a teleport); fall back to a push-out so it cannot stick.
+    if (pointInAnyPolygon(px, pz, near)) {
+      const res = this.resolveCollision(px, pz, radius);
+      px = res.x; pz = res.z;
+    }
+    return this.clampToBounds(px, pz);
   }
 
   /** Keep a position inside the mapped city extent. */
@@ -377,6 +490,16 @@ export function pointInPolygon(x, z, ring) {
     }
   }
   return inside;
+}
+
+/** True when (x, z) falls inside any of the given building rings. */
+export function pointInAnyPolygon(x, z, buildings) {
+  for (const b of buildings) {
+    if (x < b.minX || x > b.maxX) continue;
+    if (z < b.minZ || z > b.maxZ) continue;
+    if (pointInPolygon(x, z, b.ring)) return true;
+  }
+  return false;
 }
 
 function closestPointOnPolygon(x, z, ring) {

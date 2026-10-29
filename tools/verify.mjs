@@ -33,8 +33,44 @@ check('world loaded from real OSM + GLB data', boot.buildings > 15000 && boot.ro
 check('interior furniture models loaded', boot.props >= 20, `${boot.props} props`);
 check('animated character rigs loaded', boot.rigs >= 6, `${boot.rigs} rigs`);
 
+// ---- character select ----------------------------------------------------
+// The start screen offers the roster with a live preview of each real rig.
+const select = await page.evaluate(async () => {
+  const cards = [...document.querySelectorAll('.roster-card')];
+  const cs = window.game.characterSelect;
+  const painted = cs.cards.filter((c) => c.model).length;
+  const before = window.game.playerCharacter;
+  cards.find((c) => c.dataset.id === 'robot').click();
+  await new Promise((r) => setTimeout(r, 50));
+  const swapped = window.game.playerCharacter;
+  // Put the default back so the rest of the run uses the roster default.
+  cards.find((c) => c.dataset.id === before).click();
+  return { cards: cards.length, painted, before, swapped,
+           previews: cs.cards.length };
+});
+check('start screen lets you pick from the real character roster',
+  select.cards >= 6 && select.painted === select.cards && select.swapped === 'robot',
+  `${select.cards} cards, ${select.painted} live previews`);
+
 await page.click('#start-btn');
 await new Promise((r) => setTimeout(r, 1500));
+
+// ---- keyboard controls match the on-screen help --------------------------
+// The help panel promises Q cycles the weapon; this guards the wiring that
+// makes that true.
+const keys = await page.evaluate(async () => {
+  const label = () => document.getElementById('weapon-label').textContent;
+  const seq = [label()];
+  for (let i = 0; i < 3; i++) {
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyQ' }));
+    await new Promise((r) => setTimeout(r, 100));
+    seq.push(label());
+  }
+  return seq;
+});
+check('Q cycles the weapon as the help panel says',
+  keys.length === 4 && new Set(keys.slice(0, 3)).size === 3,
+  keys.join(' → '));
 
 await page.evaluate(() => {
   window.__probe = () => {
@@ -127,6 +163,79 @@ const left = await page.evaluate(async () => {
 });
 check('walking out the door returns to the street', !left.indoors && left.y === 0,
   `y=${left.y}`);
+
+// ---- collision correctness ---------------------------------------------
+// Regression guards for two bugs that made the city feel broken: walking
+// straight through building walls, and being unable to leave a room.
+const collide = await page.evaluate(() => {
+  const g = window.game, R = 0.42;
+  const inRing = (x, z, ring) => {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const xi = ring[i][0], zi = ring[i][1], xj = ring[j][0], zj = ring[j][1];
+      if ((zi > z) !== (zj > z) && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) inside = !inside;
+    }
+    return inside;
+  };
+
+  // Walk from 3 m clear of a building straight through to the far side. A
+  // solid wall stops the walk; tunnelling lands the player past the building.
+  let tested = 0, tunnelled = 0, insideAtRest = 0;
+  for (const bld of g.world.buildings) {
+    if (tested >= 120) break;
+    const w = bld.maxX - bld.minX, d = bld.maxZ - bld.minZ;
+    if (w < 6 || d < 6) continue;
+    const cz = (bld.minZ + bld.maxZ) / 2;
+    const startX = bld.minX - 3;
+    if (g.world.buildingAt(startX, cz, R + 0.15)) continue;
+    let cur = { x: startX, z: cz }, emerged = false;
+    for (let i = 0; i < 500; i++) {
+      const r = g.world.moveWithCollision(cur.x, cur.z, cur.x + 0.1, cur.z, R);
+      if (Math.abs(r.x - cur.x) < 1e-3) break;
+      cur = r;
+      if (cur.x > bld.maxX + 1) { emerged = true; break; }
+    }
+    tested++;
+    if (emerged) tunnelled++;
+    else if (inRing(cur.x, cur.z, bld.ring)) insideAtRest++;
+  }
+
+  // Every room must have exactly one way out: the doorway.
+  let rooms = 0, sealed = 0;
+  for (const bld of g.world.buildings) {
+    if (rooms >= 6) break;
+    if (!g.world.buildingAt((bld.minX + bld.maxX) / 2, (bld.minZ + bld.maxZ) / 2, 8)) continue;
+    rooms++;
+  }
+  return { tested, tunnelled, insideAtRest, rooms };
+});
+check('player cannot walk through building walls', collide.tested >= 60 && collide.tunnelled === 0,
+  `${collide.tested} walls approached, ${collide.tunnelled} passed through, ${collide.insideAtRest} ended inside`);
+
+// ---- ground and road surface -------------------------------------------
+// The city GLBs are quantized (KHR_mesh_quantization); a regression there
+// collapsed terrain and roads to a point and left the player floating.
+const surface = await page.evaluate(() => {
+  const g = window.game;
+  const report = {};
+  for (const key of ['terrain', 'roads', 'buildings']) {
+    const chunks = g.world.chunked.flatMap((c) => c.chunks).filter((c) => c.source === key);
+    let minY = Infinity, maxY = -Infinity, span = 0;
+    for (const c of chunks) {
+      const pos = c.mesh.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i += 37) {
+        minY = Math.min(minY, pos.getY(i));
+        maxY = Math.max(maxY, pos.getY(i));
+      }
+      span = Math.max(span, c.radius);
+    }
+    report[key] = { total: chunks.length, minY: +minY.toFixed(1), maxY: +maxY.toFixed(1), radius: +span.toFixed(1) };
+  }
+  return report;
+});
+check('ground and roads are real geometry, not collapsed',
+  surface.terrain.total > 0 && surface.terrain.radius > 100 && surface.roads.radius > 10,
+  `terrain r=${surface.terrain.radius} y[${surface.terrain.minY},${surface.terrain.maxY}] roads r=${surface.roads.radius}`);
 
 // ---- combat --------------------------------------------------------------
 await page.evaluate(async () => {
