@@ -123,8 +123,23 @@ match the reply. The `make` command therefore returns `{ env, agentId }`.
 
 ## Publishing
 
-The `GITHUB_TOKEN` available here has read-only access to
-`onelpawarai-X/hypercity-3d` (`permissions.push` is false), so an agent cannot
-push to `main` and trigger the Pages deploy. Work lands on the local `master`
-branch; the user pushes it, or grants a token with `contents: write`.
+Pages deploys from `main`. A push to `main` is what triggers it, so the release
+flow is: push the work to a branch, open a PR, merge it, then poll the workflow
+run and confirm the live site serves the new build.
+
+The ambient `GITHUB_TOKEN` is an App token for the `ZYRAXON-AI` account and is
+read-only on this repo, so it cannot push or fork here. The platform `create_pr`
+tool fails with a 422 for the same reason. Ask the repository owner for a token
+that has `contents: write` on `onelpawarai-X/hypercity-3d`, and pass it on the
+command line or through the environment - never commit it, and never leave it in
+a remote URL. Restore the remote to the bare URL when finished.
+
+After a deploy, verify the live site rather than trusting the workflow's green
+tick:
+
+```bash
+curl -s "https://onelpawarai-x.github.io/hypercity-3d/?cb=$(date +%s)" \
+  | grep -o 'assets/index-[A-Za-z0-9_-]*\.js'   # compare with dist/assets/
+URL=https://onelpawarai-x.github.io/hypercity-3d/ node tools/verify.mjs
+```
 
