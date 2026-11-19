@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZYRAXON AI — প্রতিষ্ঠাতা সাক্ষাৎকার গাইড</title>
+<meta name="description" content="প্রতিষ্ঠাতা সাক্ষাৎকারের জন্য ১০০টি প্রশ্ন ও প্রস্তাবিত উত্তর — বাংলা গাইড।">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">ZYRAXON AI · সাক্ষাৎকার প্রস্তুতি</p>
+    <h1>প্রতিষ্ঠাতা<br><span class="accent">সাক্ষাৎকার গাইড</span></h1>
+    <p class="lede">iDEA-র সামনে নিজের পরিকল্পনা উপস্থাপন, প্রশ্নের উত্তর এবং ভবিষ্যৎ লক্ষ্য সাজানোর জন্য ১০০টি প্রশ্ন ও প্রস্তাবিত উত্তর — এক জায়গায়, বাংলায়।</p>
+    <div class="hero-actions">
+      <button class="btn primary" id="startBtn">পড়া শুরু করুন</button>
+      <a class="btn ghost" href="guide.pdf" download>PDF ডাউনলোড</a>
+      <a class="btn ghost" href="zyraxon-guide.zip" download>সোর্স ZIP</a>
+      <button class="btn ghost" id="printBtn">প্রিন্ট</button>
+    </div>
+    <ul class="stats" id="stats"></ul>
+  </div>
+</header>
+
+<div class="layout wrap">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="search-box">
+      <input type="search" id="search" placeholder="প্রশ্ন খুঁজুন… (যেমন: ফান্ডিং)" autocomplete="off" aria-label="প্রশ্ন খুঁজুন">
+      <kbd>/</kbd>
+    </div>
+    <nav id="toc" aria-label="বিষয়সূচি"></nav>
+    <div class="progress-card">
+      <div class="progress-head">
+        <span>প্রস্তুতির অগ্রগতি</span>
+        <strong id="progressText">০%</strong>
+      </div>
+      <div class="bar"><span id="progressBar"></span></div>
+      <button class="link-btn" id="resetProgress">রিসেট</button>
+    </div>
+  </aside>
+
+  <main id="content">
+    <div id="resultsNote" class="results-note" hidden></div>
+    <div id="frontMatter"></div>
+    <div id="sections"></div>
+    <footer class="foot">
+      <p>প্রতিটি উত্তর নিজের ভাষায় বলুন। যা এখনো তৈরি হয়নি, সেটিকে ভবিষ্যৎ পরিকল্পনা হিসেবে উপস্থাপন করুন।</p>
+    </footer>
+  </main>
+</div>
+
+<button class="menu-toggle" id="menuToggle" aria-label="বিষয়সূচি খুলুন">☰</button>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
