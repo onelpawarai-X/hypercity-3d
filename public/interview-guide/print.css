@@ -7,6 +7,7 @@
   html, body { background: #fff !important; color: #1a1a1a !important; font-size: 10.5pt; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
+
   .grain, .sidebar, .menu-toggle, .hero-actions, .progress-card,
   .search-box, .foot, #resultsNote, .q-check { display: none !important; }
 
@@ -20,7 +21,7 @@
   .hero::after { content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 3mm; background: #c9902c; }
   .hero .wrap { width: 100%; padding: 0 22mm; }
 
-  .eyebrow { color: #8a5c07 !important; letter-spacing: .24em; font-size: 9pt; margin-bottom: 1.4rem; }
+  .eyebrow { color: #8a5c07 !important; letter-spacing: normal; font-size: 9pt; margin-bottom: 1.4rem; }
   .hero h1 {
     font-family: "Bengali Serif", "Hind", serif; font-size: 40pt; line-height: 1.18;
     color: #14120f !important; margin: 0 0 1.6rem;
@@ -48,7 +49,7 @@
     page-break-after: avoid; break-after: avoid;
     border-bottom: 2px solid #14120f; padding-bottom: .6rem; margin: 0 0 5mm;
   }
-  .section-head .kicker { color: #8a5c07 !important; font-size: 8.5pt; letter-spacing: .16em; margin: 0 0 .35rem; }
+  .section-head .kicker { color: #8a5c07 !important; font-size: 8.5pt; letter-spacing: normal; margin: 0 0 .35rem; }
   .section-head h2 { font-family: "Bengali Serif", "Hind", serif; font-size: 20pt; color: #14120f !important; margin: 0; line-height: 1.3; }
   .section-head .sub { color: #5d564a !important; font-size: 10pt; margin: .4rem 0 0; }
 
@@ -67,13 +68,13 @@
     page-break-after: avoid; break-after: avoid;
     background: none !important; border: none; cursor: default; text-align: left; width: 100%;
   }
-  .q-num { color: #8a5c07 !important; font-size: 9pt; letter-spacing: .08em; display: block; margin-bottom: .2rem; }
+  .q-num { color: #8a5c07 !important; font-size: 9pt; letter-spacing: normal; display: block; margin-bottom: .2rem; }
   .q-title { font-family: "Bengali Serif", "Hind", serif; font-size: 11.4pt; line-height: 1.5; color: #14120f !important; display: block; }
   .q-head::after { display: none !important; }
 
   .q-body { display: block !important; padding: 0 4mm 3.6mm !important; border-top: none; }
 
-  .opts-label { color: #6b6455 !important; font-size: 8.5pt; letter-spacing: .12em; margin: .2rem 0 .4rem; }
+  .opts-label { color: #6b6455 !important; font-size: 8.5pt; letter-spacing: normal; margin: .2rem 0 .4rem; }
   .opts { list-style: none; padding: 0; margin: 0 0 .7rem; display: grid; gap: .28rem; }
   .opts li {
     background: #f7f5f0 !important; border: 1px solid #e8e3d8 !important;
@@ -88,7 +89,7 @@
     margin: .55rem 0 0 !important; padding: .5rem .7rem !important;
     page-break-inside: avoid; break-inside: avoid;
   }
-  .note b { color: #8a5c07 !important; display: block; font-size: 8.5pt; letter-spacing: .1em; margin-bottom: .15rem; }
+  .note b { color: #8a5c07 !important; display: block; font-size: 8.5pt; letter-spacing: normal; margin-bottom: .15rem; }
 
   a { color: inherit !important; text-decoration: none; }
   h1, h2, h3 { page-break-after: avoid; }
